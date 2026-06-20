@@ -69,70 +69,89 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ## Project: Task Feedback Board
 
 ### Tech Stack (Do Not Deviate)
-- **Frontend**: Next.js 14+ (App Router), TypeScript, Tailwind CSS
-- **Backend**: Django REST Framework
-- **Database**: PostgreSQL
+- **Frontend**: Next.js 16 (App Router), TypeScript, Tailwind CSS v4
+- **Backend**: Django 6, Django REST Framework 3.17
+- **Database**: PostgreSQL 16
+- **DnD**: @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities
 
 ### Project Structure
 ```
 Feedback_board/
-├── backend/         # Django REST Framework
-├── frontend/        # Next.js application
-└── docs/            # Documentation & milestones
+├── backend/           # Django REST Framework (issues app)
+│   └── issues/        # All models, views, serializers, seed command
+├── frontend/          # Next.js application
+│   ├── src/app/       # App Router pages
+│   ├── src/components/# React components (flat)
+│   └── src/lib/       # API client, types, colors, indicators
+└── docs/              # Documentation
 ```
 
-### Data Model Constraints
-**Issue** must contain exactly these fields:
-| Field       | Type                              | Validation                    |
-|-------------|-----------------------------------|-------------------------------|
-| title       | string                            | Required, max 200 chars       |
-| description | text                              | Required                      |
-| priority    | enum: `low`, `medium`, `high`     | Required, must be valid value |
-| status      | enum: `open`, `in_progress`, `done` | Default: `open`             |
-| created_at  | datetime                          | Auto-generated                |
+### Data Model
+
+| Model | Key Fields | Notes |
+|-------|------------|-------|
+| Board | title, created_at | Single board; app uses `.first()` |
+| Column | board (FK), title, position, color | Sortable, hex color |
+| Card | column (FK), title, description, position, color, created_at, updated_at | Computed: comment_count, issue_key, priority |
+| Comment | card (FK), body, created_at | Ordered by created_at |
+| Issue | title, description, priority, column (FK, PROTECT), card (OneToOne, CASCADE), created_at, updated_at | Key format: `{PREFIX}-{id}` |
 
 ### API Contract (Do Not Change)
-| Method | Endpoint            | Purpose                |
-|--------|---------------------|------------------------|
-| GET    | /api/issues/        | List all issues        |
-| POST   | /api/issues/        | Create new issue       |
-| PATCH  | /api/issues/{id}/   | Update issue (status)  |
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | `/api/board/` | Board with nested columns + cards |
+| POST | `/api/columns/` | Create column |
+| PATCH | `/api/columns/{id}/` | Update column |
+| DELETE | `/api/columns/{id}/` | Delete column |
+| PATCH | `/api/cards/{id}/` | Update card (move, reorder) |
+| DELETE | `/api/cards/{id}/` | Delete card (cascades issue) |
+| GET | `/api/cards/{id}/comments/` | List comments |
+| POST | `/api/cards/{id}/comments/` | Add comment |
+| POST | `/api/issues/` | Create issue + card |
+| PATCH | `/api/issues/{id}/` | Update issue (syncs to card) |
+| GET | `/api/issues/` | List issues |
+
+### Issue ↔ Card Sync
+| Trigger | Direction | What syncs |
+|---------|-----------|------------|
+| `POST /api/issues/` | Issue → Card | Creates Card; sets color from priority |
+| `PATCH /api/issues/{id}/` | Issue → Card | Title, description, color, column |
+| `PATCH /api/cards/{id}/` | Card → Issue | Title, description, column |
+| Drag card (column change) | Card → Issue | Via `sync_issue_from_card` |
+
+### Dependencies
+
+**Backend** (no others without approval):
+- Django, djangorestframework, psycopg2-binary, django-cors-headers, python-dotenv
+
+**Frontend** (no others without approval):
+- create-next-app defaults, react-grab (dev only), @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities
 
 ### Restrictions
 
-1. **No Additional Dependencies** without explicit approval
-   - Backend: Django, djangorestframework, psycopg2-binary, django-cors-headers only
-   - Frontend: create-next-app defaults + `react-grab` (dev-only, for UI element context in development)
-
-2. **No Authentication/Authorization** - Keep it simple, no user system
-
-3. **No Additional Models** - Only the Issue model, no comments, tags, or users
-
-4. **No External Services** - No cloud storage, email, or third-party APIs
-
-5. **No Over-Engineering**
-   - No Redux/Zustand - use React state and props
+1. **No Authentication/Authorization** — Single-user, no login
+2. **No External Services** — No cloud storage, email, or third-party APIs
+3. **No Over-Engineering**
+   - No Redux/Zustand — React state and props only
    - No custom hooks unless truly reusable
    - No context providers for simple state
    - No pagination unless data grows large
-
-6. **Styling Rules**
-   - Tailwind CSS only - no CSS modules, styled-components, or external UI libraries
-   - Follow `docs/design.md` for all frontend UI/UX decisions
+4. **Styling Rules**
+   - Tailwind CSS only — no CSS modules, styled-components, or external UI libraries
+   - Follow `docs/DESIGN.md` for all frontend UI/UX decisions
    - No custom theme configuration beyond defaults
-   - Mobile-first responsive design
-
-7. **Code Organization**
+5. **Code Organization**
    - Backend: Single `issues` app, no splitting into multiple apps
    - Frontend: Flat component structure in `components/`, no nested folders
    - Keep files under 200 lines
 
 ### Development Rules
 
-1. **Follow Milestones** - Complete in order: Backend → Frontend → Integration
-2. **Test Each Endpoint** before moving to frontend
-3. **Validate on Both Ends** - Frontend for UX, backend as source of truth
-4. **Handle All States** - Loading, error, empty, success for every async operation
+1. **Test Each Endpoint** before moving from backend to frontend
+2. **Validate on Both Ends** — Frontend for UX, backend as source of truth
+3. **Handle All States** — Loading, error, empty, success for every async operation
+4. **Run `npm run build` and `npm run lint`** after any frontend changes
 
 ### Naming Conventions
 - **Backend**: snake_case (Python convention)

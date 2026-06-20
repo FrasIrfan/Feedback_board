@@ -39,9 +39,16 @@
   --spacing-section-lg: 48px;
 }
 
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--color-frame-ink);
+}
+
 body {
   background: var(--color-frame-ink);
-  color: var(--color-ink);
+  color: var(--color-on-primary);
   font-family: var(--font-body);
   font-size: 14px;
   line-height: 1.4;
@@ -139,33 +146,45 @@ body {
   }
 
   .page-frame {
-    min-height: 100vh;
+    min-height: 100dvh;
     background-color: var(--color-frame-ink);
-    padding: var(--spacing-sm);
+    padding: 0;
   }
 
   @media (max-width: 768px) {
     .page-frame {
-      padding: var(--spacing-xs);
+      padding: 0;
     }
   }
 
   @media (max-width: 480px) {
     .page-frame {
-      padding: var(--spacing-xxs);
+      padding: 0;
     }
   }
 
   .page-canvas {
-    max-width: 760px;
+    display: flex;
+    min-height: 100dvh;
+    width: 100%;
+    max-width: none;
+    flex-direction: column;
     margin-inline: auto;
-    background-color: var(--color-canvas);
+    background-color: var(--color-frame-ink);
   }
 
   .top-banner {
     background-color: var(--color-frame-ink);
     color: var(--color-on-primary);
-    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--color-frame-ink);
+    padding: var(--spacing-lg) var(--spacing-xl);
+  }
+
+  .board-workspace {
+    flex: 1;
+    overflow-x: auto;
+    background-color: var(--color-frame-ink);
+    padding: var(--spacing-xl);
   }
 
   .section-eyebrow {
@@ -199,7 +218,7 @@ body {
   }
 
   .text-input:focus {
-    outline: 1px solid var(--color-frame-ink);
+    outline: 2px solid var(--color-yellow-sticker);
     outline-offset: 0;
   }
 
@@ -214,6 +233,7 @@ body {
     text-transform: uppercase;
     padding: var(--spacing-s) var(--spacing-lg);
     border-radius: 0;
+    cursor: pointer;
   }
 
   .btn-primary:disabled {
@@ -231,6 +251,7 @@ body {
     text-transform: uppercase;
     padding: var(--spacing-s) var(--spacing-lg);
     border-radius: 0;
+    cursor: pointer;
   }
 
   .btn-secondary:disabled {
@@ -248,6 +269,7 @@ body {
     text-transform: uppercase;
     padding: var(--spacing-s) var(--spacing-lg);
     border-radius: 0;
+    cursor: pointer;
   }
 
   .btn-yellow:disabled {
@@ -281,10 +303,10 @@ body {
   }
 
   .footer-band {
-    background-color: var(--color-canvas);
-    color: var(--color-ink);
+    background-color: var(--color-frame-ink);
+    color: var(--color-on-primary);
     border-top: 1px solid var(--color-frame-ink);
-    padding: var(--spacing-lg);
+    padding: var(--spacing-md) var(--spacing-lg);
   }
 
   .ex-toast {
@@ -296,6 +318,7 @@ body {
 
   .ex-empty-state-card {
     background-color: var(--color-canvas);
+    color: var(--color-ink);
     border: 1px solid var(--color-frame-ink);
     padding: var(--spacing-xl);
     text-align: center;
@@ -306,7 +329,7 @@ body {
   }
 
   .modal-backdrop {
-    background-color: rgb(0 0 0 / 0.4);
+    background-color: transparent;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
@@ -321,7 +344,8 @@ body {
     width: min(100%, 32rem);
     min-width: 280px;
     flex-shrink: 0;
-    background-color: var(--color-canvas);
+    background-color: var(--color-frame-ink);
+    color: var(--color-ink);
     border: 2px solid var(--color-frame-ink);
     overflow: visible;
   }

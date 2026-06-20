@@ -3,7 +3,8 @@
 > **Milestone 1**: ✅ Complete (14/14 tasks)
 > **Milestone 2**: ✅ Complete (21/21 tasks)
 > **Milestone 3**: ✅ Complete (27/28 tasks, 1 optional skipped)
-> **Date**: 2026-06-19
+> **Milestone 4**: ✅ Complete (Kanban board, DnD, comments, full API)
+> **Date**: 2026-06-21
 
 ---
 
@@ -32,7 +33,7 @@
 | `title` CharField max_length=200 | ✅ | `models.CharField(max_length=200)` |
 | `description` TextField | ✅ | `models.TextField()` |
 | `priority` with choices | ✅ | `CharField` with `Priority.TextChoices`: `low`, `medium`, `high` |
-| `status` with choices | ✅ | `CharField` with `Status.TextChoices`: `open`, `in_progress`, `done` (default: `open`) |
+| `status` with choices | ✅ | Replaced by `column` FK in M4 |
 | `created_at` auto_now_add | ✅ | `DateTimeField(auto_now_add=True)` |
 | Run migrations | ✅ | `0001_initial` created and applied successfully |
 
@@ -40,17 +41,9 @@
 
 | Task | Status | Details |
 |------|--------|---------|
-| IssueSerializer with validation | ✅ | Custom validators for title length, priority enum, status enum |
-| IssueViewSet | ✅ | `ModelViewSet` with `get`, `post`, `patch` — list, create, partial_update |
-| URL routing | ✅ | Router at `api/issues/` — `/api/issues/` (GET, POST), `/api/issues/{id}/` (GET, PATCH) |
-
-### Verified API Responses
-
-```
-GET  /api/issues/       → 200 []                     (empty list)
-POST /api/issues/       → 201 {"id":1, "title":..., "status":"open", ...}
-PATCH /api/issues/1/    → 200 {"id":1, "status":"in_progress", ...}
-```
+| IssueSerializer with validation | ✅ | Custom validators for title length, priority enum |
+| IssueViewSet | ✅ | `ModelViewSet` with `get`, `post`, `patch` |
+| URL routing | ✅ | Router at `api/issues/` |
 
 ## 1.5 CORS Configuration — ✅ Complete
 
@@ -64,44 +57,8 @@ PATCH /api/issues/1/    → 200 {"id":1, "status":"in_progress", ...}
 | Rule | Status | Verified |
 |------|--------|----------|
 | Title required, max 200 chars | ✅ | `POST` with no title → `"title":["This field is required."]`; 201 chars → `"Ensure this field has no more than 200 characters."` |
-| Description required | ✅ | `POST` with no description → model-level `blank=False` enforcement |
 | Priority valid enum | ✅ | `"urgent"` → `"\"urgent\" is not a valid choice."` |
-| Status valid enum | ✅ | Defaults to `open`; PATCH with invalid value → model-level enforcement |
-
-## Backend — Files Created
-
-```
-backend/
-├── config/
-│   ├── __init__.py
-│   ├── settings.py          # PostgreSQL, CORS, INSTALLED_APPS configured
-│   ├── urls.py              # api/ route included
-│   ├── wsgi.py
-│   └── asgi.py
-├── issues/
-│   ├── __init__.py
-│   ├── admin.py
-│   ├── apps.py
-│   ├── models.py            # Issue model
-│   ├── serializers.py       # IssueSerializer with validation
-│   ├── views.py             # IssueViewSet
-│   ├── urls.py              # Router for /api/issues/
-│   ├── tests.py
-│   └── migrations/
-│       └── 0001_initial.py
-├── manage.py
-├── requirements.txt
-├── .env.example
-└── venv/
-```
-
-## Backend — Deliverables Verification
-
-- [x] Working Django project with PostgreSQL connection
-- [x] Issue model with migrations applied
-- [x] REST API endpoints: GET, POST, PATCH
-- [x] Backend validation with meaningful error messages
-- [x] CORS configured for frontend at localhost:3000
+| Column required | ✅ | `POST` with no column → validation error |
 
 ---
 
@@ -119,96 +76,21 @@ backend/
 
 | Task | Status | Details |
 |------|--------|---------|
-| Issue interface | ✅ | `{ id, title, description, priority, status, created_at }` |
-| Priority and Status types | ✅ | `type Priority = 'low' | 'medium' | 'high'` |
-| API response types | ✅ | Reuses `Issue` type |
-| Form data types | ✅ | `CreateIssueData` and `UpdateIssueData` interfaces |
-
-File: `src/lib/types.ts`
+| Issue, Card, Column, Board, Comment interfaces | ✅ | Full type definitions in `types.ts` |
+| Priority type | ✅ | `type Priority = 'low' | 'medium' | 'high'` |
+| API data types | ✅ | `BoardData`, `ColumnData`, `CardData`, `CommentData`, `IssueData` |
 
 ## 2.3 API Client — ✅ Complete
 
 | Task | Status | Details |
 |------|--------|---------|
 | Fetch wrapper | ✅ | Generic `request<T>()` with JSON headers, error handling |
-| `getIssues()` | ✅ | `GET /api/issues/` → `Issue[]` |
-| `createIssue()` | ✅ | `POST /api/issues/` → `Issue` |
-| `updateIssueStatus()` | ✅ | `PATCH /api/issues/{id}/` with status body |
+| `getBoard()` | ✅ | `GET /api/board/` → nested Board with columns + cards |
+| `createIssue()` / `updateIssue()` | ✅ | Issue CRUD via issues API |
+| `updateCard()` | ✅ | Card move/reorder via cards API |
+| `getComments()` / `createComment()` | ✅ | Comment CRUD via cards/{id}/comments/ |
+| `createColumn()` / `updateColumn()` | ✅ | Column management |
 | Error handling | ✅ | `ApiClientError` class with status + parsed body |
-
-File: `src/lib/api.ts`
-
-## 2.4 Components — ✅ Complete
-
-### IssueCard
-- Displays title, description, priority badge, date, status dropdown
-- Priority badge colors: `accent-orange` (high), `accent-blue` (medium), `brand-green` (low)
-- Status dropdown using `StatusDropdown` component
-- Card styling: `rounded-xl` border, `border-hairline`, `bg-canvas`, `p-6` (per DESIGN.md `card-base`)
-
-### IssueForm
-- Title input (text), Description textarea, Priority select
-- Submit button with loading/disabled state
-- Client-side validation (title required & max 200, description required)
-- Server error display per field
-- Button: `rounded-full` pill, `bg-brand-green`, `text-ink` (per DESIGN.md `button-primary`)
-
-### IssueList
-- Fetches and renders `IssueCard` components in responsive grid
-- **Loading**: 3 skeleton cards with pulse animation
-- **Empty**: "No issues yet" message
-- **Error**: error message with retry button
-- Optimistic status updates with rollback on failure
-
-### StatusDropdown
-- Simple `<select>` styled with design tokens (`rounded-md`, `border-hairline-strong`)
-- Three options: Open, In Progress, Done
-- Disabled state support
-
-## 2.5 Main Page — ✅ Complete
-
-| Task | Status | Details |
-|------|--------|---------|
-| Page header | ✅ | "Feedback Board" title with subtitle |
-| New Issue button | ✅ | Toggles form visibility, changes to "Cancel" when open |
-| Issue list | ✅ | `IssueList` component with all states |
-| Responsive layout | ✅ | 1-col mobile → 2-col tablet → 3-col desktop |
-| Toast notifications | ✅ | Error toasts at bottom center, auto-dismiss after 4s |
-
-## Design Tokens Used (from DESIGN.md)
-
-| Category | Tokens |
-|----------|--------|
-| **Colors** | `brand-green`, `brand-green-dark`, `brand-green-soft`, `accent-orange`, `accent-blue`, `accent-purple`, `canvas`, `surface`, `hairline`, `hairline-strong`, `hairline-soft`, `ink`, `slate`, `steel`, `muted`, `on-dark` |
-| **Shapes** | `rounded-full` (buttons), `rounded-xl` (cards), `rounded-lg` (inputs) |
-| **Buttons** | Pill shape, brand-green primary CTA |
-| **Cards** | White bg, hairline border, 12px rounded corners |
-
-## Frontend — Files Created
-
-```
-frontend/
-├── .env.local
-├── src/
-│   ├── app/
-│   │   ├── globals.css        # Design tokens as @theme
-│   │   ├── layout.tsx          # Root layout
-│   │   └── page.tsx            # Main page (client component)
-│   ├── components/
-│   │   ├── IssueCard.tsx       # Issue display card
-│   │   ├── IssueForm.tsx       # Create issue form
-│   │   ├── IssueList.tsx       # List with loading/empty/error states
-│   │   └── StatusDropdown.tsx  # Status selector
-│   └── lib/
-│       ├── api.ts              # API client
-│       └── types.ts            # TypeScript types
-```
-
-## Frontend — Build Verification
-
-- [x] TypeScript compilation: no errors
-- [x] Next.js production build: success
-- [x] All components render without runtime errors
 
 ---
 
@@ -219,19 +101,19 @@ frontend/
 | Task | Status | Details |
 |------|--------|---------|
 | Configure API base URL | ✅ | `NEXT_PUBLIC_API_URL` in `.env.local` |
-| IssueList fetches from Django | ✅ | `getIssues()` → `GET /api/issues/` |
-| IssueForm POSTs new issues | ✅ | `createIssue()` → `POST /api/issues/` |
-| StatusDropdown PATCHes status | ✅ | `updateIssueStatus()` → `PATCH /api/issues/{id}/` |
+| Board loads on mount | ✅ | `getBoard()` → `GET /api/board/` |
+| Create/edit issues | ✅ | `createIssue()` / `updateIssue()` |
+| Card drag updates server | ✅ | `updateCard()` on drag end |
 | CORS configured | ✅ | Backend allows `localhost:3000` |
 
 ## 3.2 Loading States — ✅ Complete
 
 | Task | Status | Details |
 |------|--------|---------|
-| Skeleton loader | ✅ | 3 animated pulse cards while fetching |
-| Loading state on form submit | ✅ | Button shows "Submitting..." and is disabled |
+| Board skeleton loader | ✅ | 4 animated column skeletons |
+| Loading state on form submit | ✅ | Button shows "Saving..." and is disabled |
 | Disabled buttons during API calls | ✅ | `disabled` prop with reduced opacity |
-| Optimistic UI for status | ✅ | Updates immediately, rolls back on error |
+| Optimistic UI for DnD | ✅ | Cards move immediately in state, revert on API failure |
 
 ## 3.3 Error Handling — ✅ Complete
 
@@ -240,58 +122,195 @@ frontend/
 | Backend validation errors displayed | ✅ | Per-field errors shown below inputs |
 | User-friendly messages | ✅ | "Is the server running?" etc. |
 | Network error with retry | ✅ | Error state has "Retry" button |
-| Toast notifications | ✅ | Bottom-center, auto-dismiss 4s, success & error variants |
+| Toast notifications | ✅ | Bottom-center, auto-dismiss 3s, success & error variants |
+| Drag revert on failure | ✅ | Reloads board from API + error toast |
 
-## 3.4 Frontend Validation — ✅ Complete
+---
 
-| Rule | Status | Details |
-|------|--------|---------|
-| Title required, max 200 | ✅ | Client-side check before submit |
-| Description required, min 10 chars | ✅ | Client-side check before submit |
-| Priority required, valid option | ✅ | Default value ensures validity |
-| Real-time feedback | ✅ | Errors shown on submit attempt |
-| Prevents invalid submission | ✅ | `validate()` gate before API call |
+# Milestone 4 — Kanban Board & Full API
 
-## 3.5 Responsive Design — ✅ Complete
+## 4.1 Data Model Expansion — ✅ Complete
 
 | Task | Status | Details |
 |------|--------|---------|
-| Mobile-first | ✅ | Single column base layout |
-| Breakpoints | ✅ | `sm:grid-cols-2` (640px), `lg:grid-cols-3` (1024px) |
-| Touch-friendly | ✅ | Standard form controls, adequate tap targets |
-| Readable text | ✅ | `text-sm` body, `text-lg` card titles |
-| Proper spacing | ✅ | Tailwind spacing scale throughout |
+| Board model | ✅ | `title`, `created_at`; app uses `Board.objects.first()` |
+| Column model | ✅ | `board` FK, `title`, `position`, `color` (hex) |
+| Card model | ✅ | `column` FK, `title`, `description`, `position`, `color`, timestamps |
+| Comment model | ✅ | `card` FK, `body`, `created_at`; ordered ascending |
+| Issue model: `column` FK | ✅ | `PROTECT` — cannot delete column with issues |
+| Issue model: `card` OneToOne | ✅ | Auto-created on issue create; cascading delete |
+| Issue model: `updated_at` | ✅ | `auto_now=True` |
+| Issue model: removed `status` | ✅ | Replaced by `column` FK |
 
-## 3.6 UX Improvements — ✅ Complete
-
-| Task | Status | Details |
-|------|--------|---------|
-| Smooth transitions | ✅ | Form slides open/closed with `transition-all duration-300` |
-| Focus management | ✅ | Title auto-focused on form open; button refocused on close |
-| Empty state | ✅ | "No issues yet" message |
-| Status confirmation | ⬜ | Skipped — marked optional in spec |
-
-## 3.7 Code Quality — ✅ Complete
+## 4.2 Seed Data — ✅ Complete
 
 | Task | Status | Details |
 |------|--------|---------|
-| No console.logs | ✅ | None present |
-| Comments | ⬜ | Skipped — code is self-documenting per conventions |
-| Consistent formatting | ✅ | Matches project style |
-| Type safety | ✅ | Full TypeScript throughout |
+| `seed_board` management command | ✅ | Creates 1 board + 4 columns (Backlog, In Progress, Review, Done) |
+| Data migration for existing issues | ✅ | Maps old status values to columns, seeds board |
+| Skips if board exists | ✅ | Idempotent |
 
-## Full API Verification
+## 4.3 API Endpoints — ✅ Complete
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | `/api/board/` | First board with nested columns + cards |
+| POST | `/api/columns/` | Create column (position auto-assigned) |
+| PATCH | `/api/columns/{id}/` | Update column (title, color, position) |
+| GET/POST | `/api/cards/{id}/comments/` | List/add comments |
+| PATCH | `/api/cards/{id}/` | Update card + sync to linked issue |
+| DELETE | `/api/cards/{id}/` | Delete card (cascades to issue) |
+| POST | `/api/issues/` | Create issue + auto-create linked card |
+| PATCH | `/api/issues/{id}/` | Update issue + sync to card |
+
+## 4.4 Issue ↔ Card Sync — ✅ Complete
+
+| Trigger | Direction | What syncs |
+|---------|-----------|------------|
+| `POST /api/issues/` | Issue → Card | Creates Card with matching title, description, column; sets card color from priority |
+| `PATCH /api/issues/{id}/` | Issue → Card | Updates title, description, color, column; repositions if column changed |
+| `PATCH /api/cards/{id}/` | Card → Issue | Updates issue title, description, column |
+| Drag card (column change) | Card → Issue | Via `perform_update` → `sync_issue_from_card` |
+
+## 4.5 Card Computed Fields — ✅ Complete
+
+| Field | Source |
+|-------|--------|
+| `comment_count` | `Card.comments.count()` (serializer method) |
+| `issue_id` | Related Issue's ID |
+| `issue_key` | `{BOARD_PREFIX}-{issue.id}` (e.g. `TFB-42`) |
+| `priority` | Related Issue's priority |
+| `column_title` | Card's column title |
+| `board_title` | Card's column's board title |
+
+## 4.6 Frontend — Board View — ✅ Complete
+
+| Feature | Details |
+|---------|---------|
+| Load board on mount | BoardPage fetches board via API |
+| Horizontal scroll columns | `overflow-x-auto` on main area |
+| Error state | Message with retry button |
+| Toast notifications | Success/error toasts, 3s auto-dismiss |
+| Board title in header | Shows `board.title` |
+| "New Issue" button | Opens create modal, defaults to first column |
+
+## 4.7 Frontend — Column Management — ✅ Complete
+
+| Feature | Details |
+|---------|---------|
+| 4 seed columns visible | Backlog, In Progress, Review, Done |
+| Column title + card count | Header shows count |
+| Column color dot | Accent from `column.color` |
+| Edit column title | Inline edit mode (pencil icon) |
+| Edit column color | ColorPicker in edit mode |
+| Add column from board | "New status" button at end of board |
+| Empty column state | "No issues yet" / "Drop cards here" |
+| "New issue" button per column | Opens create modal with column pre-selected |
+
+## 4.8 Frontend — Issue/Card Management — ✅ Complete
+
+| Feature | Details |
+|---------|---------|
+| Create issue (header + column button) | Opens modal |
+| Create issue (column button) | Pre-selects that column |
+| "Create more" toggle | Keeps modal open after create |
+| Edit issue (click card) | Opens same modal in edit mode |
+| Issue key display | e.g. `TFB-1` on card face and modal |
+| Title (required, max 200) | Auto-expanding textarea |
+| Description | Optional multiline |
+| Priority selector | Low / Medium / High pill menu |
+| Status (column) selector | Dropdown with column options |
+| Save issue | PATCH via issues API |
+| Delete issue | Two-step confirm; deletes card (cascades issue) |
+| Created / updated dates | Shown in edit mode |
+
+## 4.9 Frontend — Card Display — ✅ Complete
+
+| Feature | Details |
+|---------|---------|
+| Issue key | Top-left identifier |
+| Title | With status icon |
+| Priority pill | Colored dot + label |
+| Board name pill | Cube icon + board title |
+| Status icon | Varies by column name (done/progress/default) |
+| Assignee placeholder | Not implemented (decorative only per spec) |
+| Created / updated dates | Short format on card face |
+
+## 4.10 Frontend — Drag-and-Drop — ✅ Complete
+
+| Feature | Details |
+|---------|---------|
+| Library | `@dnd-kit/core` + `@dnd-kit/sortable` |
+| Drag card within column | Reorder via sortable |
+| Drag card across columns | Updates column + position |
+| Drag overlay preview | Rotated/scaled card ghost |
+| Optimistic UI during drag | Live preview in `handleDragOver` |
+| Revert on invalid drop | Returns to original position |
+| Revert on API failure | Reloads board + error toast |
+| Collision detection | `closestCorners` strategy |
+| Click vs drag disambiguation | Suppresses click after drag |
+
+## 4.11 Frontend — Feedback (Comments) — ✅ Complete
+
+| Feature | Details |
+|---------|---------|
+| View comments in edit modal | Loaded on modal open |
+| Post new comment | From edit issue modal |
+| Comment timestamps | Locale-formatted |
+| Empty state | "No feedback yet." |
+
+## 4.12 Frontend — Accessibility — ✅ Complete
+
+| Feature | Details |
+|---------|---------|
+| Escape closes modal | CreateIssueForm |
+| ARIA dialog attributes | `role="dialog"`, `aria-modal`, labels |
+| Focus on title input | Auto-focused on modal open |
+| Loading/error/empty states | All async operations covered |
+
+## 4.13 Dependencies Added — ✅ Complete
+
+| Dependency | Version | Purpose |
+|------------|---------|---------|
+| `@dnd-kit/core` | 6.x | Drag-and-drop context |
+| `@dnd-kit/sortable` | 10.x | Sortable card behavior |
+| `@dnd-kit/utilities` | 10.x | CSS transform utilities |
+| `python-dotenv` | 1.x | Env file loading (backend) |
+
+## 4.14 Django Admin — ✅ Complete
+
+All models registered: Board, Column, Card, Comment, Issue.
+
+---
+
+## Full API Verification (Milestone 4)
 
 ```
-GET  /api/issues/       → 200 [ ... ]           (returns issues)
-POST /api/issues/       → 201 { ... }            (creates with valid data)
-PATCH /api/issues/1/    → 200 { "status": "done" }  (updates status)
-POST (invalid)          → 400 { "field": ["error"] } (validation errors)
+GET /api/board/
+→ 200 {"title":"Task Feedback Board","columns":[{"title":"Backlog","cards":[...]},...]}
+
+POST /api/issues/
+→ 201 {"title":"Test","priority":"high","column":1,"card":1,"issue_key":"TFB-1"}
+
+PATCH /api/cards/1/
+→ 200 {"title":"Moved","column":3,"column_title":"Review","position":0}
+
+POST /api/cards/1/comments/
+→ 201 {"body":"Feedback text","created_at":"..."}
+
+POST /api/columns/
+→ 201 {"title":"New Col","color":"#5e6ad2","position":4}
+
+GET /api/issues/
+→ 200 [{"id":1,"title":"Test","column":1,...}]
 ```
+
+---
 
 ## Build Verification
 
 - [x] TypeScript compilation: no errors
+- [x] ESLint: no errors
 - [x] Next.js production build: success
 - [x] Django backend: migrations applied, server starts
-- [x] API endpoints: all three methods verified
+- [x] All API endpoints verified
